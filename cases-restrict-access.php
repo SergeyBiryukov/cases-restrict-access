@@ -71,7 +71,7 @@ function cases_restrict_case_view() {
 	if ( is_single() && 'cases' == $post->post_type && ! cases_is_case_member( get_current_user_id(), $post->ID ) )
 		wp_die( __( 'Sorry, you do not have the right to access this post.' ) );
 }
-// add_action( 'wp', 'cases_restrict_case_view' );
+add_action( 'wp', 'cases_restrict_case_view' );
 
 function cases_disable_comments( $comment_post_ID ) {
 	$post = get_post( $comment_post_ID );
