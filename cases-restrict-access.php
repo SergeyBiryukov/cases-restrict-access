@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: Cases.RestrictAccess
+Plugin Name: Cases. Kernel. Restrict Access
 Plugin URI: http://itau.ru/
 Description: Настройка прав доступа для ACM Cases.
 Author: Sergey Biryukov
 Author URI: http://profiles.wordpress.org/sergeybiryukov/
-Version: 0.1
+Version: 0.1.1
 */ 
 
 function cases_get_person_email_by_id( $person_id ) {
@@ -49,14 +49,20 @@ function cases_map_meta_cap( $caps, $cap, $user_id, $args ) {
 		case 'read_post' :
 		case 'delete_post' :
 			$post_id = ( ! empty( $args ) ) ? array_shift( $args ) : 0;
+			if ( empty( $post_id ) )
+				break;
+
 			$post = get_post( $post_id );
 			if ( 'cases' == $post->post_type && ! cases_is_case_member( $user_id, $post_id ) )
 				$caps[] = 'do_not_allow';
 			break;
 		case 'edit_posts' :
 			$post_id = ( ! empty( $_GET['p'] ) ) ? (int) $_GET['p'] : 0;
+			if ( empty( $post_id ) )
+				break;
+
 			$post = get_post( $post_id );
-			if ( !empty( $post ) && 'cases' == $post->post_type && ! cases_is_case_member( $user_id, $post_id ) )
+			if ( 'cases' == $post->post_type && ! cases_is_case_member( $user_id, $post_id ) )
 				$caps[] = 'do_not_allow';
 			break;
 	}
