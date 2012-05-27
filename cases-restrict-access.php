@@ -5,7 +5,7 @@ Plugin URI: http://itau.ru/
 Description: Настройка прав доступа для ACM Cases.
 Author: Sergey Biryukov
 Author URI: http://profiles.wordpress.org/sergeybiryukov/
-Version: 0.1.1
+Version: 0.1.2
 */ 
 
 function cases_get_person_email_by_id( $person_id ) {
@@ -33,6 +33,10 @@ function cases_get_case_members( $case_id ) {
 
 function cases_is_case_member( $user_id, $case_id ) {
 	if ( user_can( $user_id, 'manage_options' ) )
+		return true;
+
+	$case = get_post( $case_id );
+	if ( $user_id == $case->post_author )
 		return true;
 
 	$user = get_userdata( $user_id );
