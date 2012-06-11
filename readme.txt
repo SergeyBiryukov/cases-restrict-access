@@ -3,7 +3,7 @@ Contributors: SergeyBiryukov
 Tags: cases, access, users
 Requires at least: 3.0
 Tested up to: 3.3
-Stable tag: 0.1.2
+Stable tag: 0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,10 @@ Only the case initiator, responsible person or participant is allowed to view, e
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 
 == Changelog ==
+
+= 0.2 =
+* Case queries only return the cases which the current user has access to
+* Fixed membership check in cases with multiple participants
 
 = 0.1.2 =
 * Fixed the ability to create new cases

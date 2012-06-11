@@ -5,28 +5,20 @@ Plugin URI: http://itau.ru/
 Description: Настройка прав доступа для ACM Cases.
 Author: Sergey Biryukov
 Author URI: http://profiles.wordpress.org/sergeybiryukov/
-Version: 0.1.2
+Version: 0.2
 */ 
-
-function cases_get_person_email_by_id( $person_id ) {
-	global $wpdb;
-
-	return $wpdb->get_var( $wpdb->prepare(
-		"SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'email' AND post_id = %d", $person_id
-	) );
-}
 
 function cases_get_case_members( $case_id ) {
 	$case_members = array();
 
 	foreach ( array( 'initiator', 'participant', 'responsible' ) as $role ) {
-		$member = get_post_meta( $case_id, $role, true );
-		if ( !empty( $member ) )
-			$case_members[ $role ] = $member;
+		$member_id = get_post_meta( $case_id, $role, true );
+		if ( !empty( $member_id ) )
+			$case_members = array_merge( $case_members, explode( ',', $member_id ) );
 	}
 
-	foreach ( $case_members as $role => $member_id )
-		$case_members[ $role ] = cases_get_person_email_by_id( $member_id );
+	foreach ( $case_members as $key => $member_id )
+		$case_members[ $key ] = get_post_meta( $member_id, 'email', true );
 
 	return $case_members;
 }
@@ -74,6 +66,34 @@ function cases_map_meta_cap( $caps, $cap, $user_id, $args ) {
 	return $caps;
 }
 add_filter( 'map_meta_cap', 'cases_map_meta_cap', 10, 4 );
+
+function cases_posts_join( $posts_join ) {
+	global $wpdb;
+	return $posts_join .= " LEFT JOIN $wpdb->postmeta ON $wpdb->posts.ID = $wpdb->postmeta.post_id";
+}
+
+function cases_posts_where( $posts_where ) {
+	global $wpdb;
+
+	$user = get_userdata( get_current_user_id() );
+	$member_id = get_person_id_by_email( $user->user_email );
+
+	$posts_where .= $wpdb->prepare(
+		" AND ( post_author = %d OR meta_key IN ( 'initiator', 'participant', 'responsible' ) AND meta_value REGEXP( '^([0-9,]+,)*%d(,[0-9,]+)*$' ) )",
+		$user->ID, $member_id
+	);
+
+	return $posts_where;
+}
+
+function cases_restrict_queries( $wp_query ) {
+	if ( 'cases' != $wp_query->get( 'post_type' ) )
+		return;
+
+	add_filter( 'posts_join', 'cases_posts_join' );
+	add_filter( 'posts_where', 'cases_posts_where' );
+}
+add_action( 'pre_get_posts', 'cases_restrict_queries' );
 
 function cases_restrict_case_view() {
 	global $post;
