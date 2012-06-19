@@ -5,7 +5,7 @@ Plugin URI: http://itau.ru/
 Description: Настройка прав доступа для ACM Cases.
 Author: Sergey Biryukov
 Author URI: http://profiles.wordpress.org/sergeybiryukov/
-Version: 0.2
+Version: 0.2.1
 */ 
 
 function cases_get_case_members( $case_id ) {
@@ -69,7 +69,11 @@ add_filter( 'map_meta_cap', 'cases_map_meta_cap', 10, 4 );
 
 function cases_posts_join( $posts_join ) {
 	global $wpdb;
-	return $posts_join .= " LEFT JOIN $wpdb->postmeta ON $wpdb->posts.ID = $wpdb->postmeta.post_id";
+
+	if ( false === strpos( $posts_join, $wpdb->postmeta ) )
+		$posts_join .= " LEFT JOIN $wpdb->postmeta ON ( $wpdb->posts.ID = $wpdb->postmeta.post_id )";
+	
+	return $posts_join;
 }
 
 function cases_posts_where( $posts_where ) {
@@ -79,19 +83,32 @@ function cases_posts_where( $posts_where ) {
 	$member_id = get_person_id_by_email( $user->user_email );
 
 	$posts_where .= $wpdb->prepare(
-		" AND ( post_author = %d OR meta_key IN ( 'initiator', 'participant', 'responsible' ) AND meta_value REGEXP( '^([0-9,]+,)*%d(,[0-9,]+)*$' ) )",
+		" AND ( post_author = %d OR ( meta_key IN ( 'initiator', 'participant', 'responsible' ) AND meta_value REGEXP( '^([0-9,]+,)*%d(,[0-9,]+)*$' ) ) )",
 		$user->ID, $member_id
 	);
 
 	return $posts_where;
 }
 
+function cases_posts_groupby( $posts_groupby ) {
+	global $wpdb;
+
+	if ( empty( $posts_groupby ) )
+		$posts_groupby = "$wpdb->posts.ID";
+	
+	return $posts_groupby;
+}
+
 function cases_restrict_queries( $wp_query ) {
-	if ( 'cases' != $wp_query->get( 'post_type' ) )
+	if ( current_user_can( 'manage_options' ) )
+		return;
+
+	if ( 'cases' != $wp_query->get( 'post_type' ) || $wp_query->is_single() )
 		return;
 
 	add_filter( 'posts_join', 'cases_posts_join' );
 	add_filter( 'posts_where', 'cases_posts_where' );
+	add_filter( 'posts_groupby', 'cases_posts_groupby' );
 }
 add_action( 'pre_get_posts', 'cases_restrict_queries' );
 
